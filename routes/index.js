@@ -23,10 +23,12 @@ module.exports = (function(){
     *
     * @apiParam {String} email Users unique email.
     * @apiParam {String} password Users password.
+    * @apiParam {String} name Users device name for refresh token.
     *
     * @apiSuccess {Boolean} success Status of the request.
     * @apiSuccess {String} message  Message describing status.
     * @apiSuccess {String} token  Authentication token for new user.
+    * @apiSuccess {String} refresh  Refresh token for user.
     */
     router.post('/registration', authentication.registration);
 
@@ -38,12 +40,30 @@ module.exports = (function(){
     *
     * @apiParam {String} email Users unique email.
     * @apiParam {String} password Users password.
+    * @apiParam {String} name Users device name for refresh token.
     *
     * @apiSuccess {Boolean} success Status of the request.
     * @apiSuccess {String} message  Message describing status.
-    * @apiSuccess {String} token  Authentication token for new user.
+    * @apiSuccess {String} token  Authentication token for user.
+    * @apiSuccess {String} refresh  Refresh token for user.
     */
     router.post('/authenticate', authentication.authenticate);
+
+    /**
+    * @api {post} /authenticate Authenticates a user
+    * @apiName Authentication
+    * @apiGroup Authentication
+    * @apiVersion 0.1.0
+    *
+    * @apiParam {String} email Users unique email.
+    * @apiParam {String} token Users refresh token.
+    *
+    * @apiSuccess {Boolean} success Status of the request.
+    * @apiSuccess {String} message  Message describing status.
+    * @apiSuccess {String} token  Authentication token for user.
+    * @apiSuccess {String} refresh  Refresh token for user.
+    */
+    router.post('/refresh', authentication.refresh);
 
     return router;
 })();

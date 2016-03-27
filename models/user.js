@@ -6,6 +6,10 @@ module.exports = mongoose.model('User', new Schema({
     email: { type: [String], index: { unique: true, dropDups: true }, lowercase: true, required: true },
     password: {type: String, required:true},
     admin: { type: Boolean, default: false },
+    devices: [{
+      name: String,
+      token: String
+    }],
     updated: { type: Date, default: Date.now },
     created: { type: Date, default: Date.now }
 }, { autoIndex: false }));

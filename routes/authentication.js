@@ -14,6 +14,8 @@ module.exports = {
 
     var user = new User();
 
+    // check if email is an email and password is set
+
     user.email = req.body.email ? req.body.email : user.email;
     user.password = req.body.password ? sha1(req.body.password) : user.password;
 
@@ -21,14 +23,23 @@ module.exports = {
         if(err) res.status(403).send(err);
 
         if(!u) {
+            var refreshToken = sha1(req.body.name);
+
+            var device = {
+              name: req.body.name,
+              token: refreshToken
+            };
+
+            user.devices.push(device);
+
             user.save(function(err){
-                if(err) res.status(403).send(err);
+                if(err) res.status(403).send({ success: false, message: 'Registration failed.' });
 
                 var token = jwt.sign({id: user._id, email:user.email}, config.secret, {
-                    expiresIn: '24h' // expires in 24 hours
+                    expiresIn: '15m' // expires in 24 hours
                 });
 
-                res.send({success: true, message: 'Created', token: token});
+                res.send({success: true, message: 'Created', token: token, refresh: refreshToken });
             });
 
         }else{
@@ -53,19 +64,53 @@ module.exports = {
                 res.status(403).send({ success: false, message: 'Authentication failed. Wrong password.' });
             } else {
                 // if user is found and password is right
+                // check if device is already recorded with a refresh token
+                var refreshToken = null;
+
+                for (var device in user.devices){
+                  if(!user.devices.hasOwnProperty(device)) continue;
+
+                  if(user.devices[device]['name'] == req.body.name){
+                    // this device has a refresh token
+                    refreshToken = user.devices[device]['token'];
+                  }
+                }
+
+                if(refreshToken == null){
+                  refreshToken = sha1(req.body.name);
+
+                  user.devices.push({
+                    name: req.body.name,
+                    token: refreshToken
+                  });
+
+                  user.save(function(err){
+                    if(err) res.status(403).send({ success: false, message: 'Authentication failed. New device token failure.' });
+                  });
+                }
+
                 // create a token
                 var token = jwt.sign({id: user._id, email:user.email}, config.secret, {
-                    expiresIn: '24h' // expires in 24 hours
+                    expiresIn: '15m' // expires in 24 hours
                 });
 
                 // return the information including token as JSON
                 res.send({
                     success: true,
                     message: 'Authenticated',
-                    token: token
+                    token: token,
+                    refresh: refreshToken
                 });
             }
           }
       });
+  },
+
+  refresh: function(req, res, next) {
+    // Look up email
+    // Check devices for name / token
+    // If they exist issue a new token
+    // If they do not exist return failure
+      res.send({success:false, message: 'EP failure'});
   }
 }
