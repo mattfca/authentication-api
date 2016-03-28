@@ -23,7 +23,7 @@ module.exports = {
         if(err) res.status(403).send(err);
 
         if(!u) {
-            var refreshToken = sha1(req.body.name);
+            var refreshToken = new Buffer(req.body.name + ":" + config.clientSecret).toString('base64');
 
             var device = {
               name: req.body.name,
@@ -77,7 +77,7 @@ module.exports = {
                 }
 
                 if(refreshToken == null){
-                  refreshToken = sha1(req.body.name);
+                  refreshToken = new Buffer(req.body.name + ":" + config.clientSecret).toString('base64');
 
                   user.devices.push({
                     name: req.body.name,
@@ -111,6 +111,42 @@ module.exports = {
     // Check devices for name / token
     // If they exist issue a new token
     // If they do not exist return failure
-      res.send({success:false, message: 'EP failure'});
+    User.findOne({
+        email: req.body.email
+    }, function(err, user) {
+        if (err) res.status(403).send({ success: false, message: err });
+
+        if (!user) {
+          res.status(403).send({ success: false, message: 'Refresh failed. User not found.' });
+        } else if (user) {
+          var refreshToken = null;
+
+          for (var device in user.devices){
+            if(!user.devices.hasOwnProperty(device)) continue;
+
+            if(user.devices[device]['name'] == req.body.name){
+              // this device has a refresh token
+              refreshToken = user.devices[device]['token'];
+            }
+          }
+
+          if(refreshToken != null && refreshToken == req.body.refresh){
+            // create a token
+            var token = jwt.sign({id: user._id, email:user.email}, config.secret, {
+                expiresIn: '15m' // expires in 24 hours
+            });
+
+            // return the information including token as JSON
+            res.send({
+                success: true,
+                message: 'Refreshed',
+                token: token,
+                refresh: refreshToken
+            });
+          }else{
+            res.status(403).send({ success: false, message: 'Refresh failed. Refresh token not found.' });
+          }
+        }
+    });
   }
 }
