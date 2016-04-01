@@ -19,8 +19,15 @@ module.exports = {
     user.email = req.body.email ? req.body.email : user.email;
     user.password = req.body.password ? sha1(req.body.password) : user.password;
 
+    var re = /(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/;
+    if(!re.test(user.email)){
+      res.status(403).send({ success: false, message: 'Invalid email.' });
+    }else if(user.password == 0){
+      res.status(403).send({ success: false, message: 'Invalid password.' });
+    }
+
     User.findOne({'email': user.email},function(err, u){
-        if(err) res.status(403).send(err);
+        if(err) res.status(403).send({ success: false, message: 'Registration failed.' });
 
         if(!u) {
             var refreshToken = new Buffer(req.body.name + ":" + config.clientSecret).toString('base64');
